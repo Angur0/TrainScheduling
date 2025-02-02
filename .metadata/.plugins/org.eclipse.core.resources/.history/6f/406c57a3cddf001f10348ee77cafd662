@@ -1,0 +1,28 @@
+public void updateDataInDatabase(int id, String arrivals, String departures, String trainId, String arrivalTime, String departureTime, String remarks) {
+    String sql = "UPDATE mrt3_schedules SET arrivals = ?, departures = ?, train_id = ?, arrival_time = ?, departure_time = ?, remarks = ? WHERE id = ?";
+
+    try (Connection connection = DriverManager.getConnection(URL);
+         PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+
+        // Set the parameters for the prepared statement
+        preparedStatement.setString(1, arrivals);
+        preparedStatement.setString(2, departures);
+        preparedStatement.setString(3, trainId);
+        preparedStatement.setString(4, arrivalTime);
+        preparedStatement.setString(5, departureTime);
+        preparedStatement.setString(6, remarks);
+        preparedStatement.setInt(7, id);
+
+        // Log the SQL execution for debugging
+        System.out.println("Executing update: " + preparedStatement.toString());
+
+        // Execute the update
+        preparedStatement.executeUpdate();
+        System.out.println("Schedule updated successfully!");
+
+    } catch (SQLException e) {
+        // Catch and log any SQL exceptions
+        System.out.println("Error updating schedule: " + e.getMessage());
+        e.printStackTrace();
+    }
+}

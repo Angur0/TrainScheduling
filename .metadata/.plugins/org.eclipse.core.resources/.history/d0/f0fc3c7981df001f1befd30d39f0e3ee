@@ -1,0 +1,169 @@
+package MRT3Simulation;
+
+import java.sql.*;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.*;
+import javax.swing.table.TableRowSorter;
+import java.util.regex.Pattern;
+
+public class methods {
+	//database handler
+    private static final String URL = "jdbc:sqlite:mrt3_schedule.db";
+
+    public void createTable() {
+        String sql = "CREATE TABLE IF NOT EXISTS mrt3_schedules (\n"
+                   + " id INTEGER PRIMARY KEY AUTOINCREMENT,\n"
+                   + " arrivals TEXT NOT NULL,\n"
+                   + " departures TEXT NOT NULL,\n"
+                   + " train_id TEXT NOT NULL,\n"
+                   + " arrival_time TEXT NOT NULL,\n"
+                   + " departure_time TEXT NOT NULL,\n"
+                   + " remarks TEXT\n"
+                   + ");";
+
+        try (Connection connection = DriverManager.getConnection(URL);
+             Statement statement = connection.createStatement()) {
+
+            statement.execute(sql);
+            System.out.println("Table created successfully.");
+
+        } catch (SQLException e) {
+            System.out.println("Error creating table: " + e.getMessage());
+        }
+    }
+
+    public void loadDataFromDatabase(DefaultTableModel tableModel) {
+        try (Connection connection = DriverManager.getConnection(URL);
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery("SELECT * FROM mrt3_schedules")) {
+
+            // Clear existing data
+            tableModel.setRowCount(0);
+
+            // Load data from the database
+            while (resultSet.next()) {
+                String arrivals = resultSet.getString("arrivals");
+                String departures = resultSet.getString("departures");
+                String trainId = resultSet.getString("train_id");
+                String arrivalTime = resultSet.getString("arrival_time");
+                String departureTime = resultSet.getString("departure_time");
+                String remarks = resultSet.getString("remarks");
+                tableModel.addRow(new Object[]{arrivals, departures, trainId, arrivalTime, departureTime, remarks});
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void saveDataToDatabase(String arrivals, String departures, String trainId, String arrivalTime, String departureTime, String remarks) {
+        String sql = "INSERT INTO mrt3_schedules(arrivals, departures, train_id, arrival_time, departure_time, remarks) VALUES(?,?,?,?,?,?)";
+
+        try (Connection connection = DriverManager.getConnection(URL);
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+
+            preparedStatement.setString(1, arrivals);
+            preparedStatement.setString(2, departures);
+            preparedStatement.setString(3, trainId);
+            preparedStatement.setString(4, arrivalTime);
+            preparedStatement.setString(5, departureTime);
+            preparedStatement.setString(6, remarks);
+            preparedStatement.executeUpdate();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void deleteDataFromDatabase(int id) {
+        String sql = "DELETE FROM mrt3_schedules WHERE id = ?";
+
+        try (Connection connection = DriverManager.getConnection(URL);
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+
+            preparedStatement.setInt(1, id);
+            preparedStatement.executeUpdate();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void updateDataInDatabase(int id, String arrivals, String departures, String trainId, String arrivalTime, String departureTime, String remarks) {
+        String sql = "UPDATE mrt3_schedules SET arrivals = ?, departures = ?, train_id = ?, arrival_time = ?, departure_time = ?, remarks = ? WHERE id = ?";
+
+        try (Connection connection = DriverManager.getConnection(URL);
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+
+            preparedStatement.setString(1, arrivals);
+            preparedStatement.setString(2, departures);
+            preparedStatement.setString(3, trainId);
+            preparedStatement.setString(4, arrivalTime);
+            preparedStatement.setString(5, departureTime);
+            preparedStatement.setString(6, remarks);
+            preparedStatement.setInt(7, id);
+            preparedStatement.executeUpdate();
+
+            System.out.println("Schedule updated successfully!");
+
+        } catch (SQLException e) {
+            System.out.println("Error updating schedule: " + e.getMessage());
+        }
+    }
+    
+    //table model
+    public class MRT3TableModel extends DefaultTableModel {
+    	public MRT3TableModel() {
+    		super(new String[]{"Arrivals", "Departures", "Train ID", "Arrival Time", "Departure Time", "Remarks"}, 0);
+    	}
+    
+    	@Override
+    	public boolean isCellEditable(int row, int column) {
+    		return false; // All cells are non-editable
+    	}
+    }
+    
+    //table utilities
+    
+    public static String getValidatedTimeInput(JFrame frame, String currentTime) {
+        String timePattern = "^(?:[01]?[0-9]|2[0-3]):[0-5][0-9]$"; // Regular expression for HH:MM format
+        String time = JOptionPane.showInputDialog(frame, "Enter Time (HH:MM):", currentTime);
+
+        // Check if the time is valid and matches the pattern
+        while (time != null && !time.matches(timePattern)) {
+            JOptionPane.showMessageDialog(frame, "Invalid time format. Please enter in HH:MM format (00:00 - 23:59).", "Error", 
+                                          JOptionPane.ERROR_MESSAGE);
+            time = JOptionPane.showInputDialog(frame, "Enter Time (HH:MM):", currentTime);
+        }
+
+        return time;
+    }
+
+    public static void filterTable(JTable table, DefaultTableModel tableModel, String query) {
+        // Ensure the table has a RowSorter
+        if (table.getRowSorter() == null) {
+            table.setRowSorter(new TableRowSorter<>(tableModel));
+        }
+
+        // Use a regex to match either arrivals or departures
+        String regex = "(?i)" + Pattern.quote(query); // Case-insensitive search
+        RowFilter<DefaultTableModel, Object> rowFilter = RowFilter.regexFilter(regex, 0, 1); // Filter by Arrivals (column 0) and Departures (column 1)
+        ((TableRowSorter<DefaultTableModel>) table.getRowSorter()).setRowFilter(rowFilter);
+    }
+
+    public static void sortTable(JTable table, DefaultTableModel tableModel, String sortBy, String order) {
+        // Ensure the table has a RowSorter
+        if (table.getRowSorter() == null) {
+            table.setRowSorter(new TableRowSorter<>(tableModel));
+        }
+
+        DefaultRowSorter<DefaultTableModel, ?> sorter = (DefaultRowSorter<DefaultTableModel, ?>) table.getRowSorter();
+        sorter.setSortKeys(null); // Clear existing sort keys
+
+        if (!sortBy.equals("Clear Sort")) {
+            int columnIndex = sortBy.equals("Arrival Time") ? 3 : 4; // Column index for arrival or departure time
+            SortOrder sortOrder = order.equals("Ascending") ? SortOrder.ASCENDING : SortOrder.DESCENDING;
+            sorter.setSortKeys(java.util.List.of(new RowSorter.SortKey(columnIndex, sortOrder)));
+        }
+    }
+}

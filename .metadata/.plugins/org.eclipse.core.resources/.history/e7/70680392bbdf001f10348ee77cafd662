@@ -1,0 +1,133 @@
+package MRT3Simulation;
+
+import java.sql.*;
+import javax.swing.table.DefaultTableModel;
+
+public class MRT3DatabaseHandler {
+    private static final String URL = "jdbc:sqlite:mrt3_schedule.db";
+
+    // Method to establish a database connection
+    private Connection connect() throws SQLException {
+        return DriverManager.getConnection(URL);
+    }
+
+    public void createTable() {
+        String sql = "CREATE TABLE IF NOT EXISTS mrt3_schedules ("
+                   + " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                   + " arrivals TEXT NOT NULL,"
+                   + " departures TEXT NOT NULL,"
+                   + " train_id TEXT NOT NULL,"
+                   + " arrival_time TEXT NOT NULL,"
+                   + " departure_time TEXT NOT NULL,"
+                   + " remarks TEXT"
+                   + ");";
+
+        try (Connection connection = connect();
+             Statement statement = connection.createStatement()) {
+
+            statement.execute(sql);
+            System.out.println("Table created successfully.");
+
+        } catch (SQLException e) {
+            System.err.println("Error creating table: " + e.getMessage());
+        }
+    }
+    
+    public void loadDataFromDatabase(DefaultTableModel tableModel) {
+        String sql = "SELECT * FROM mrt3_schedules";
+
+        try (Connection connection = connect();
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)) {
+
+            // Clear existing data
+            tableModel.setRowCount(0);
+
+            // Load data from the database
+            while (resultSet.next()) {
+                int id = resultSet.getInt("id"); // Fetch ID
+                String arrivals = resultSet.getString("arrivals");
+                String departures = resultSet.getString("departures");
+                String trainId = resultSet.getString("train_id");
+                String arrivalTime = resultSet.getString("arrival_time");
+                String departureTime = resultSet.getString("departure_time");
+                String remarks = resultSet.getString("remarks");
+
+                // Now adding 'id' as the first column to make deletion easier
+                tableModel.addRow(new Object[]{id, arrivals, departures, trainId, arrivalTime, departureTime, remarks});
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void saveDataToDatabase(String arrivals, String departures, String trainId, String arrivalTime, String departureTime, String remarks) {
+        String sql = "INSERT INTO mrt3_schedules (arrivals, departures, train_id, arrival_time, departure_time, remarks) VALUES (?, ?, ?, ?, ?, ?)";
+
+        try (Connection connection = connect();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+
+            preparedStatement.setString(1, arrivals);
+            preparedStatement.setString(2, departures);
+            preparedStatement.setString(3, trainId);
+            preparedStatement.setString(4, arrivalTime);
+            preparedStatement.setString(5, departureTime);
+            preparedStatement.setString(6, remarks);
+            preparedStatement.executeUpdate();
+
+            System.out.println("New schedule saved successfully!");
+
+        } catch (SQLException e) {
+            System.err.println("Error saving data: " + e.getMessage());
+        }
+    }
+
+    public void deleteDataFromDatabase(int id) {
+        String sql = "DELETE FROM mrt3_schedules WHERE id = ?";
+
+        try (Connection connection = connect();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+
+            preparedStatement.setInt(1, id);
+            int rowsDeleted = preparedStatement.executeUpdate();
+
+            if (rowsDeleted > 0) {
+                System.out.println("Schedule with ID " + id + " deleted successfully.");
+            } else {
+                System.out.println("No record found with ID " + id);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error deleting data: " + e.getMessage());
+        }
+    }
+
+    public void updateDataInDatabase(int id, String arrivals, String departures, String trainId, String arrivalTime, String departureTime, String remarks) {
+        String sql = "UPDATE mrt3_schedules SET arrivals = ?, departures = ?, train_id = ?, arrival_time = ?, departure_time = ?, remarks = ? WHERE id = ?";
+
+        try (Connection connection = connect();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+
+            preparedStatement.setString(1, arrivals);
+            preparedStatement.setString(2, departures);
+            preparedStatement.setString(3, trainId);
+            preparedStatement.setString(4, arrivalTime);
+            preparedStatement.setString(5, departureTime);
+            preparedStatement.setString(6, remarks);
+            preparedStatement.setInt(7, id);
+
+            int rowsUpdated = preparedStatement.executeUpdate();
+
+            if (rowsUpdated > 0) {
+                System.out.println("Schedule with ID " + id + " updated successfully!");
+            } else {
+                System.out.println("No record found with ID " + id);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error updating schedule: " + e.getMessage());
+        }
+    }
+
+}

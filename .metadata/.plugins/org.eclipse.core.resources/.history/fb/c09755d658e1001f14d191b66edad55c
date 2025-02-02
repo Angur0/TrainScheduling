@@ -1,0 +1,23 @@
+package MRT3Simulation;
+
+import javax.swing.table.DefaultTableModel;
+
+public class MRT3TableModel extends DefaultTableModel{
+	
+    public static final String[] COLUMN_NAMES = {"Arrivals", "Departures", "Train ID", "Arrival Time", "Departure Time", "Remarks"};
+    public static final int ARRIVALS_COLUMN = 0;
+    public static final int DEPARTURES_COLUMN = 1;
+    public static final int TRAIN_ID_COLUMN = 2;
+    public static final int ARRIVAL_TIME_COLUMN = 3;
+    public static final int DEPARTURE_TIME_COLUMN = 4;
+    public static final int REMARKS_COLUMN = 5;
+
+    public MRT3TableModel() {
+        super(COLUMN_NAMES, 0); // Initialize the table model with column names
+    }
+
+    @Override
+    public boolean isCellEditable(int row, int column) {
+        return false; // All cells are non-editable
+    }
+}
