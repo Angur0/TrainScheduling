@@ -26,7 +26,8 @@ public class MRT3SimulationApp {
         JFrame frame = new JFrame("MRT-3 Train Scheduling Simulation");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1000, 500);
-
+        frame.setMinimumSize(new Dimension(800, 400)); 
+        
         // Use BorderLayout for dynamic resizing
         frame.setLayout(new BorderLayout());
 
@@ -40,7 +41,7 @@ public class MRT3SimulationApp {
         // Disable column reordering
         app.table.getTableHeader().setReorderingAllowed(false);
 
-        // Disable column resizing
+        // Disable column format
         app.table.getTableHeader().setResizingAllowed(false);
 
         // Add the table to a scroll pane (to enable scrolling)
@@ -186,6 +187,17 @@ public class MRT3SimulationApp {
                 // User clicked Cancel, handle accordingly
                 return;
             }
+            //Check Whether arrival and departure station is the same
+            if (arrivals.equals(departures)) {
+                JOptionPane.showMessageDialog(
+                        frame,
+                        "Arrival and Departure stations cannot be the same. Please select different stations.",
+                        "Invalid Input",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return; // Exit the method without saving
+            }
+            
 
             String trainId = JOptionPane.showInputDialog(
                     frame,
@@ -232,10 +244,20 @@ public class MRT3SimulationApp {
             );
 
             if (arrivals != null && departures != null && trainId != null && arrivalTime != null && departureTime != null) {
-                app.dbHandler.saveDataToDatabase(arrivals, departures, trainId, arrivalTime, departureTime, remarks);
-                app.dbHandler.loadDataFromDatabase(app.tableModel); // Refresh the table
+                try {
+                    app.dbHandler.saveDataToDatabase(arrivals, departures, trainId, arrivalTime, departureTime, remarks);
+                    app.dbHandler.loadDataFromDatabase(app.tableModel); // Refresh the table
+                } catch (IllegalArgumentException ex) {
+                    JOptionPane.showMessageDialog(
+                            frame,
+                            "Train ID already exists. Please enter a unique Train ID.",
+                            "Duplicate Train ID",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                }
             }
         });
+            
 
         deleteButton.addActionListener(e -> {
             int selectedRow = app.table.getSelectedRow();
@@ -300,6 +322,17 @@ public class MRT3SimulationApp {
                     // User clicked Cancel, handle accordingly
                     return;
                 }
+                
+                // Check if arrival and departure stations are the same
+                if (newArrivals.equals(newDepartures)) {
+                    JOptionPane.showMessageDialog(
+                            frame,
+                            "Arrival and Departure stations cannot be the same. Please select different stations.",
+                            "Invalid Input",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                    return; // Exit the method without updating
+                }
 
                 String newTrainId = JOptionPane.showInputDialog(
                         frame,
@@ -348,11 +381,19 @@ public class MRT3SimulationApp {
                     currentRemarks
                 );
 
-                // Validate input and update the database
                 if (newArrivals != null && newDepartures != null && newTrainId != null && newArrivalTime != null && newDepartureTime != null) {
-                    int id = ((MRT3TableModel)app.tableModel).getHiddenId(modelRow);//Hidden ID rows
-                    app.dbHandler.updateDataInDatabase(id, newArrivals, newDepartures, newTrainId, newArrivalTime, newDepartureTime, newRemarks);//Call the update method in the database handler
-                    app.dbHandler.loadDataFromDatabase(app.tableModel);//Refresh the table model after update
+                    try {
+                        int id = ((MRT3TableModel) app.tableModel).getHiddenId(modelRow); // Hidden ID rows
+                        app.dbHandler.updateDataInDatabase(id, newArrivals, newDepartures, newTrainId, newArrivalTime, newDepartureTime, newRemarks); // Call the update method in the database handler
+                        app.dbHandler.loadDataFromDatabase(app.tableModel); // Refresh the table model after update
+                    } catch (IllegalArgumentException ex) {
+                        JOptionPane.showMessageDialog(
+                                frame,
+                                "Train ID already exists. Please enter a unique Train ID.",
+                                "Duplicate Train ID",
+                                JOptionPane.ERROR_MESSAGE
+                        );
+                    }
                 }
             } else {
                 JOptionPane.showMessageDialog(frame, "Please select a row to edit.", "Error Editing Schedule", JOptionPane.ERROR_MESSAGE);
@@ -376,6 +417,7 @@ public class MRT3SimulationApp {
 
         detailsButton.addActionListener(e -> {
             int selectedRow = app.table.getSelectedRow();
+            
             if (selectedRow >= 0) {
                 String details = "Train ID: " + app.tableModel.getValueAt(selectedRow, 2) + "\n"
                         + "Arrivals: " + app.tableModel.getValueAt(selectedRow, 0) + "\n"

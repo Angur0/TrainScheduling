@@ -7,6 +7,7 @@ public class MRT3DatabaseHandler {
 	private static final String URL = "jdbc:sqlite:mrt3_schedule.db";
 
 	    public void createTable() {
+	    	
 	        String sql = "CREATE TABLE IF NOT EXISTS mrt3_schedules (\n"
 	                   + " id INTEGER PRIMARY KEY AUTOINCREMENT,\n"
 	                   + " arrivals TEXT NOT NULL,\n"
@@ -117,5 +118,7 @@ public class MRT3DatabaseHandler {
 	            e.printStackTrace();
 	        }
 	    }
+	    
+	    
 
 }

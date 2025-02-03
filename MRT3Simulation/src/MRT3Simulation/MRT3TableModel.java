@@ -6,6 +6,7 @@ import java.util.List;
 import javax.swing.table.DefaultTableModel;
 
 public class MRT3TableModel extends DefaultTableModel{
+	
     public MRT3TableModel() {
         super(new String[]{"Arrivals", "Departures", "Train ID", "Arrival Time", "Departure Time", "Remarks"}, 0);
     }
